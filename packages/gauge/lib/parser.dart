@@ -5,6 +5,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+/// Class that represents the CPU and GPU usage percentage.
+///
+/// See also: [IosTraceParser.parseCpuGpu]
 class CpuGpuResult {
   CpuGpuResult(this.gpuPercentage, this.cpuPercentage);
 
@@ -25,15 +28,23 @@ class CpuGpuResult {
   }
 }
 
+/// Parser that distills the output from TraceUtility.
+///
+/// See also: https://github.com/Qusic/TraceUtility
 class IosTraceParser {
+  /// Creates a [IosTraceParser] that runs the TraceUtility executable at
+  /// [traceUtilityPath], verbosely if [isVerbose] is true.
   IosTraceParser(this.isVerbose, this.traceUtilityPath);
 
   final bool isVerbose;
   final String traceUtilityPath;
 
+  List<String> _lines;
   List<String> _gpuMeasurements;
   List<String> _cpuMeasurements;
 
+  /// Runs TraceUtility on the file at [filename] and parses the output for the
+  /// process named [processName] that is needed for [CpuGpuResult].
   CpuGpuResult parseCpuGpu(String filename, String processName) {
     final ProcessResult result = Process.runSync(
       traceUtilityPath,
@@ -44,13 +55,13 @@ class IosTraceParser {
       print('TraceUtility stderr:\n${result.stderr.toString}\n\n');
       throw Exception('TraceUtility failed with exit code ${result.exitCode}');
     }
-    final List<String> lines = result.stderr.toString().split('\n');
+    _lines = result.stderr.toString().split('\n');
 
     // toSet to remove duplicates
     _gpuMeasurements =
-        lines.where((String s) => s.contains('GPU')).toSet().toList();
+        _lines.where((String s) => s.contains('GPU')).toSet().toList();
     _cpuMeasurements =
-        lines.where((String s) => s.contains(processName)).toSet().toList();
+        _lines.where((String s) => s.contains(processName)).toSet().toList();
     _gpuMeasurements.sort();
     _cpuMeasurements.sort();
 
@@ -107,8 +118,9 @@ class IosTraceParser {
 
   double _average(Iterable<double> values) {
     if (values == null || values.isEmpty) {
-      _gpuMeasurements.forEach(print);
-      _cpuMeasurements.forEach(print);
+      print('TraceUtility output:\n${_lines.join('\n')}\n\n');
+      print('GPU measurements:\n${_gpuMeasurements.join('\n')}\n\n');
+      print('CPU measurements:\n${_cpuMeasurements.join('\n')}\n\n');
       throw Exception('No valid measurements found.');
     }
     return values.reduce((double a, double b) => a + b) / values.length;

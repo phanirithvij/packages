@@ -1,7 +1,7 @@
 task:
   use_compute_credits: $CIRRUS_USER_COLLABORATOR == 'true' && $CIRRUS_PR == ''
   container:
-    dockerfile: .ci/Dockerfile    
+    dockerfile: .ci/Dockerfile
     cpu: 4
     memory: 8G
   upgrade_script:
@@ -11,17 +11,13 @@ task:
   activate_script: pub global activate flutter_plugin_tools
   matrix:
     - name: analyze
-      script: ./script/incremental_build.sh analyze
+      # TODO(goderbauer): remove custom-analysis once gauge has proper API docs.
+      script: ./script/incremental_build.sh analyze --custom-analysis gauge
     - name: publishable
       script: ./script/check_publish.sh
       depends_on:
         - analyze
     - name: test+format
-      install_script:
-        - wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-        - sudo apt-add-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-5.0 main"
-        - sudo apt-get update
-        - sudo apt-get install -y --allow-unauthenticated clang-format-5.0
       format_script: ./script/incremental_build.sh format --travis --clang-format=clang-format-5.0
       test_script: ./script/incremental_build.sh test
       depends_on:
@@ -48,10 +44,6 @@ task:
       BUILD_SHARDING: "--shardIndex 0 --shardCount 2"
       BUILD_SHARDING: "--shardIndex 1 --shardCount 2"
   setup_script:
-    - brew update
-    - brew install libimobiledevice
-    - brew install ideviceinstaller
-    - brew install ios-deploy
     - pod repo update
     - git clone https://github.com/flutter/flutter.git
     - git fetch origin master

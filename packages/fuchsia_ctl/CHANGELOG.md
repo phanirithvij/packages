@@ -1,5 +1,29 @@
 # CHANGELOG
 
+## 0.0.23
+
+- Added `emu` tool for spawning an emulator instance given a Fuchsia QEMU build,
+  the Fuchsia SDK, and an Android emulator executable.
+- Fixed homepage link.
+
+## 0.0.18 - 0.0.22
+
+- Add retries to paving operations.
+- Add timeouts to paving and ssh operations.
+- Add arguments parameter to test command.
+
+## 0.0.17
+
+- Add "push-packages" option.
+
+## 0.0.16
+
+- Refactor usages of `amberctl` to its own class.
+
+## 0.0.9 - 0.0.15
+
+- Various improvements including support for Fuchsia tests.
+
 ## 0.0.8
 
 - Use fuchsiapkg URLs to launch test target

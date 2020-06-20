@@ -16,7 +16,12 @@ abstract class Tar {
   /// A const constructor to allow subclasses to create const constructors.
   const Tar();
 
-  Future<OperationResult> untar(String src, String destination);
+  /// Untars a tar file.
+  Future<OperationResult> untar(
+    String src,
+    String destination, {
+    Duration timeoutMs,
+  });
 }
 
 /// The archive package is very slow and memory intensive. Use
@@ -30,18 +35,25 @@ class SystemTar implements Tar {
     this.processManager = const LocalProcessManager(),
   }) : assert(processManager != null);
 
+  /// The [ProcessManager] impleemntation to use when spawning the system tar
+  /// program.
   final ProcessManager processManager;
+
+  /// The default timeout for untar operations as [Duration] in milliseconds.
+  static const Duration defaultTarTimeoutMs =
+      Duration(milliseconds: 5 * 60 * 1000);
 
   @override
   Future<OperationResult> untar(
     String src,
-    String destination,
-  ) async {
+    String destination, {
+    Duration timeoutMs = defaultTarTimeoutMs,
+  }) async {
     final ProcessResult result = await processManager.run(<String>[
       'tar',
-      '-xvf', src, //
+      '-xf', src, //
       '-C', destination,
-    ]);
+    ]).timeout(timeoutMs);
 
     return OperationResult.fromProcessResult(result);
   }

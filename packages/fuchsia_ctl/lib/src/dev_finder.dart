@@ -43,15 +43,10 @@ class DevFinder {
     }
     final List<String> command = <String>[
       devFinderPath,
-      if (deviceName != null)
-        'resolve'
-      else
-        'list',
+      if (deviceName != null) 'resolve' else 'list',
       '-device-limit', '1', //
-      if (local)
-        '-local',
-      if (deviceName != null)
-        deviceName,
+      if (local) '-local',
+      if (deviceName != null) deviceName,
     ];
 
     for (int i = 0; i < numTries; i++) {
@@ -84,8 +79,8 @@ class DevFinder {
   /// default value is false.
   Future<String> getTargetAddress(
     String deviceName, {
-    int numTries = 30,
-    int sleepDelay = 2,
+    int numTries = 75,
+    int sleepDelay = 4,
     bool nullOk = false,
   }) {
     return _runDevFinderWithRetries(
@@ -129,8 +124,11 @@ class DevFinder {
 
 /// The exception thrown when a [DevFinder] lookup fails.
 class DevFinderException implements Exception {
+  /// Creates a new [DevFinderException], such as when dev_finder fails to find
+  /// a device.
   const DevFinderException(this.message);
 
+  /// The user-facing message to display.
   final String message;
 
   @override
