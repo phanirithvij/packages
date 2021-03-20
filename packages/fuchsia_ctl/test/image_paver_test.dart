@@ -1,7 +1,7 @@
 // Copyright 2019 The Flutter Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-
+// @dart = 2.4
 import 'dart:async';
 import 'dart:io';
 
@@ -163,7 +163,7 @@ class FakeTar implements Tar {
     if (passes) {
       final Directory dir = fs.directory(destination)
         ..createSync(recursive: true);
-      dir.childFile('pave.sh')..createSync();
+      dir.childFile('pave.sh').createSync();
       return OperationResult.success();
     }
     return OperationResult.error('tar failed');

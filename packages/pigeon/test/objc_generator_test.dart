@@ -29,7 +29,7 @@ void main() {
     final StringBuffer sink = StringBuffer();
     generateObjcSource(ObjcOptions(header: 'foo.h'), root, sink);
     final String code = sink.toString();
-    expect(code, contains('#import \"foo.h\"'));
+    expect(code, contains('#import "foo.h"'));
     expect(code, contains('@implementation Foobar'));
   });
 
@@ -53,7 +53,7 @@ void main() {
     expect(code, contains('@interface Output'));
     expect(code, contains('@protocol Api'));
     expect(code, matches('nullable Output.*doSomething.*Input.*FlutterError'));
-    expect(code, matches('ApiSetup.*\<Api\>.*_Nullable'));
+    expect(code, matches('ApiSetup.*<Api>.*_Nullable'));
   });
 
   test('gen one api source', () {
@@ -122,7 +122,7 @@ void main() {
     generateObjcSource(ObjcOptions(header: 'foo.h'), root, sink);
     final String code = sink.toString();
     expect(code, contains('@implementation Foobar'));
-    expect(code, contains('result.aBool = dict[@\"aBool\"];'));
+    expect(code, contains('result.aBool = dict[@"aBool"];'));
   });
 
   test('nested class header', () {
@@ -153,9 +153,8 @@ void main() {
     final StringBuffer sink = StringBuffer();
     generateObjcSource(ObjcOptions(header: 'foo.h'), root, sink);
     final String code = sink.toString();
-    expect(
-        code, contains('result.nested = [Input fromMap:dict[@\"nested\"]];'));
-    expect(code, matches('[self.nested toMap].*@\"nested\"'));
+    expect(code, contains('result.nested = [Input fromMap:dict[@"nested"]];'));
+    expect(code, matches('[self.nested toMap].*@"nested"'));
   });
 
   test('prefix class header', () {
@@ -315,7 +314,7 @@ void main() {
     final StringBuffer sink = StringBuffer();
     generateObjcHeader(ObjcOptions(header: 'foo.h', prefix: 'ABC'), root, sink);
     final String code = sink.toString();
-    expect(code, contains('completion:(void(^)(NSError*))'));
+    expect(code, contains('completion:(void(^)(NSError* _Nullable))'));
   });
 
   test('gen flutter void return source', () {
@@ -331,7 +330,7 @@ void main() {
     final StringBuffer sink = StringBuffer();
     generateObjcSource(ObjcOptions(header: 'foo.h', prefix: 'ABC'), root, sink);
     final String code = sink.toString();
-    expect(code, contains('completion:(void(^)(NSError*))'));
+    expect(code, contains('completion:(void(^)(NSError* _Nullable))'));
     expect(code, contains('completion(nil)'));
   });
 
@@ -383,7 +382,7 @@ void main() {
     expect(
         code,
         contains(
-            '(void)doSomething:(void(^)(ABCOutput*, NSError*))completion'));
+            '(void)doSomething:(void(^)(ABCOutput*, NSError* _Nullable))completion'));
   });
 
   test('gen flutter void arg header', () {
@@ -402,7 +401,219 @@ void main() {
     expect(
         code,
         contains(
-            '(void)doSomething:(void(^)(ABCOutput*, NSError*))completion'));
+            '(void)doSomething:(void(^)(ABCOutput*, NSError* _Nullable))completion'));
     expect(code, contains('channel sendMessage:nil'));
+  });
+
+  test('gen list', () {
+    final Root root = Root(apis: <Api>[], classes: <Class>[
+      Class(
+          name: 'Foobar',
+          fields: <Field>[Field(name: 'field1', dataType: 'List')]),
+    ]);
+    final StringBuffer sink = StringBuffer();
+    generateObjcHeader(ObjcOptions(), root, sink);
+    final String code = sink.toString();
+    expect(code, contains('@interface Foobar'));
+    expect(code, matches('@property.*NSArray.*field1'));
+  });
+
+  test('gen map', () {
+    final Root root = Root(apis: <Api>[], classes: <Class>[
+      Class(
+          name: 'Foobar',
+          fields: <Field>[Field(name: 'field1', dataType: 'Map')]),
+    ]);
+    final StringBuffer sink = StringBuffer();
+    generateObjcHeader(ObjcOptions(), root, sink);
+    final String code = sink.toString();
+    expect(code, contains('@interface Foobar'));
+    expect(code, matches('@property.*NSDictionary.*field1'));
+  });
+
+  test('async void(input) HostApi header', () {
+    final Root root = Root(apis: <Api>[
+      Api(name: 'Api', location: ApiLocation.host, methods: <Method>[
+        Method(
+            name: 'doSomething',
+            argType: 'Input',
+            returnType: 'void',
+            isAsynchronous: true)
+      ])
+    ], classes: <Class>[
+      Class(
+          name: 'Input',
+          fields: <Field>[Field(name: 'input', dataType: 'String')]),
+      Class(
+          name: 'Output',
+          fields: <Field>[Field(name: 'output', dataType: 'String')]),
+    ]);
+    final StringBuffer sink = StringBuffer();
+    generateObjcHeader(ObjcOptions(header: 'foo.h', prefix: 'ABC'), root, sink);
+    final String code = sink.toString();
+    expect(
+        code,
+        contains(
+            '(void)doSomething:(nullable ABCInput *)input completion:(void(^)(FlutterError *_Nullable))completion'));
+  });
+
+  test('async output(input) HostApi header', () {
+    final Root root = Root(apis: <Api>[
+      Api(name: 'Api', location: ApiLocation.host, methods: <Method>[
+        Method(
+            name: 'doSomething',
+            argType: 'Input',
+            returnType: 'Output',
+            isAsynchronous: true)
+      ])
+    ], classes: <Class>[
+      Class(
+          name: 'Input',
+          fields: <Field>[Field(name: 'input', dataType: 'String')]),
+      Class(
+          name: 'Output',
+          fields: <Field>[Field(name: 'output', dataType: 'String')]),
+    ]);
+    final StringBuffer sink = StringBuffer();
+    generateObjcHeader(ObjcOptions(header: 'foo.h', prefix: 'ABC'), root, sink);
+    final String code = sink.toString();
+    expect(
+        code,
+        contains(
+            '(void)doSomething:(nullable ABCInput *)input completion:(void(^)(ABCOutput *_Nullable, FlutterError *_Nullable))completion'));
+  });
+
+  test('async output(void) HostApi header', () {
+    final Root root = Root(apis: <Api>[
+      Api(name: 'Api', location: ApiLocation.host, methods: <Method>[
+        Method(
+            name: 'doSomething',
+            argType: 'void',
+            returnType: 'Output',
+            isAsynchronous: true)
+      ])
+    ], classes: <Class>[
+      Class(
+          name: 'Output',
+          fields: <Field>[Field(name: 'output', dataType: 'String')]),
+    ]);
+    final StringBuffer sink = StringBuffer();
+    generateObjcHeader(ObjcOptions(header: 'foo.h', prefix: 'ABC'), root, sink);
+    final String code = sink.toString();
+    expect(
+        code,
+        contains(
+            '(void)doSomething:(void(^)(ABCOutput *_Nullable, FlutterError *_Nullable))completion'));
+  });
+
+  test('async void(void) HostApi header', () {
+    final Root root = Root(apis: <Api>[
+      Api(name: 'Api', location: ApiLocation.host, methods: <Method>[
+        Method(
+            name: 'doSomething',
+            argType: 'void',
+            returnType: 'void',
+            isAsynchronous: true)
+      ])
+    ], classes: <Class>[]);
+    final StringBuffer sink = StringBuffer();
+    generateObjcHeader(ObjcOptions(header: 'foo.h', prefix: 'ABC'), root, sink);
+    final String code = sink.toString();
+    expect(
+        code,
+        contains(
+            '(void)doSomething:(void(^)(FlutterError *_Nullable))completion'));
+  });
+
+  test('async output(input) HostApi source', () {
+    final Root root = Root(apis: <Api>[
+      Api(name: 'Api', location: ApiLocation.host, methods: <Method>[
+        Method(
+            name: 'doSomething',
+            argType: 'Input',
+            returnType: 'Output',
+            isAsynchronous: true)
+      ])
+    ], classes: <Class>[
+      Class(
+          name: 'Input',
+          fields: <Field>[Field(name: 'input', dataType: 'String')]),
+      Class(
+          name: 'Output',
+          fields: <Field>[Field(name: 'output', dataType: 'String')]),
+    ]);
+    final StringBuffer sink = StringBuffer();
+    generateObjcSource(ObjcOptions(header: 'foo.h', prefix: 'ABC'), root, sink);
+    final String code = sink.toString();
+    expect(
+        code,
+        contains(
+            '[api doSomething:input completion:^(ABCOutput *_Nullable output, FlutterError *_Nullable error) {'));
+  });
+
+  test('async void(input) HostApi source', () {
+    final Root root = Root(apis: <Api>[
+      Api(name: 'Api', location: ApiLocation.host, methods: <Method>[
+        Method(
+            name: 'doSomething',
+            argType: 'Input',
+            returnType: 'void',
+            isAsynchronous: true)
+      ])
+    ], classes: <Class>[
+      Class(
+          name: 'Input',
+          fields: <Field>[Field(name: 'input', dataType: 'String')]),
+      Class(
+          name: 'Output',
+          fields: <Field>[Field(name: 'output', dataType: 'String')]),
+    ]);
+    final StringBuffer sink = StringBuffer();
+    generateObjcSource(ObjcOptions(header: 'foo.h', prefix: 'ABC'), root, sink);
+    final String code = sink.toString();
+    expect(
+        code,
+        contains(
+            '[api doSomething:input completion:^(FlutterError *_Nullable error) {'));
+  });
+
+  test('async void(void) HostApi source', () {
+    final Root root = Root(apis: <Api>[
+      Api(name: 'Api', location: ApiLocation.host, methods: <Method>[
+        Method(
+            name: 'doSomething',
+            argType: 'void',
+            returnType: 'void',
+            isAsynchronous: true)
+      ])
+    ], classes: <Class>[]);
+    final StringBuffer sink = StringBuffer();
+    generateObjcSource(ObjcOptions(header: 'foo.h', prefix: 'ABC'), root, sink);
+    final String code = sink.toString();
+    expect(
+        code, contains('[api doSomething:^(FlutterError *_Nullable error) {'));
+  });
+
+  test('async output(void) HostApi source', () {
+    final Root root = Root(apis: <Api>[
+      Api(name: 'Api', location: ApiLocation.host, methods: <Method>[
+        Method(
+            name: 'doSomething',
+            argType: 'void',
+            returnType: 'Output',
+            isAsynchronous: true)
+      ])
+    ], classes: <Class>[
+      Class(
+          name: 'Output',
+          fields: <Field>[Field(name: 'output', dataType: 'String')]),
+    ]);
+    final StringBuffer sink = StringBuffer();
+    generateObjcSource(ObjcOptions(header: 'foo.h', prefix: 'ABC'), root, sink);
+    final String code = sink.toString();
+    expect(
+        code,
+        contains(
+            '[api doSomething:^(ABCOutput *_Nullable output, FlutterError *_Nullable error) {'));
   });
 }

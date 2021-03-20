@@ -37,9 +37,9 @@ Future<void> main(List<String> args) async {
         abbr: 'd',
         help: 'The device node name to use. '
             'If not specified, the first discoverable device will be used.')
-    ..addOption('dev-finder-path',
-        defaultsTo: './dev_finder',
-        help: 'The path to the dev_finder executable.')
+    ..addOption('device-finder-path',
+        defaultsTo: './device-finder',
+        help: 'The path to the device-finder executable.')
     ..addFlag('help', defaultsTo: false, help: 'Prints help.');
 
   /// This is a blocking command and will run until exited.
@@ -68,7 +68,9 @@ Future<void> main(List<String> args) async {
     ..addOption('identity-file',
         defaultsTo: '.ssh/pkey', help: 'The key to use when SSHing.')
     ..addOption('timeout-seconds',
-        defaultsTo: '120', help: 'Ssh command timeout in seconds.');
+        defaultsTo: '120', help: 'Ssh command timeout in seconds.')
+    ..addOption('log-file',
+        defaultsTo: '', help: 'The file to write stdout and stderr.');
   parser.addCommand('pave')
     ..addOption('public-key',
         abbr: 'p', help: 'The public key to add to authorized_keys.')
@@ -135,7 +137,7 @@ Future<void> main(List<String> args) async {
   }
   final OperationResult result = await command(
     results['device-name'],
-    DevFinder(results['dev-finder-path']),
+    DevFinder(results['device-finder-path']),
     results.command,
   );
   if (!result.success) {
@@ -176,17 +178,21 @@ Future<OperationResult> ssh(
   const SshClient sshClient = SshClient();
   final String targetIp = await devFinder.getTargetAddress(deviceName);
   final String identityFile = args['identity-file'];
+  final String outputFile = args['log-file'];
   if (args['interactive']) {
-    return await sshClient.interactive(
+    return sshClient.interactive(
       targetIp,
       identityFilePath: identityFile,
     );
   }
-  final OperationResult result = await sshClient.runCommand(targetIp,
-      identityFilePath: identityFile,
-      command: args['command'].split(' '),
-      timeoutMs:
-          Duration(milliseconds: int.parse(args['timeout-seconds']) * 1000));
+  final OperationResult result = await sshClient.runCommand(
+    targetIp,
+    identityFilePath: identityFile,
+    command: args['command'].split(' '),
+    timeoutMs:
+        Duration(milliseconds: int.parse(args['timeout-seconds']) * 1000),
+    logFilePath: outputFile,
+  );
   stdout.writeln(
       '==================================== STDOUT ====================================');
   stdout.writeln(result.info);
@@ -207,7 +213,7 @@ Future<OperationResult> pave(
     maxDelay: Duration(seconds: 30),
     maxAttempts: 3,
   );
-  return await r.retry(() async {
+  return r.retry(() async {
     final OperationResult result = await paver.pave(
       args['image'],
       deviceName,
@@ -231,11 +237,11 @@ Future<OperationResult> pm(
     case 'serve':
       await server.serveRepo(args['repo']);
       await Future<void>.delayed(const Duration(seconds: 15));
-      return await server.close();
+      return server.close();
     case 'newRepo':
-      return await server.newRepo(args['repo']);
+      return server.newRepo(args['repo']);
     case 'publishRepo':
-      return await server.publishRepo(args['repo'], args['far']);
+      return server.publishRepo(args['repo'], args['far']);
     default:
       throw ArgumentError('Command ${args.command.name} unknown.');
   }
@@ -275,7 +281,7 @@ Future<OperationResult> pushPackages(
     await amberCtl.addSrc(server.serverPort);
 
     stdout.writeln('Pushing packages $packages to $targetIp');
-    for (String packageName in packages) {
+    for (final String packageName in packages) {
       stdout.writeln('Attempting to add package $packageName.');
       await amberCtl.addPackage(packageName);
     }
@@ -342,7 +348,7 @@ Future<OperationResult> test(
     await server.serveRepo(repo.path, port: 0);
     await amberCtl.addSrc(server.serverPort);
 
-    for (String farFile in farFiles) {
+    for (final String farFile in farFiles) {
       result = await server.publishRepo(repo.path, farFile);
       if (!result.success) {
         stderr.writeln('Failed to publish repo at $repo with $farFiles.');

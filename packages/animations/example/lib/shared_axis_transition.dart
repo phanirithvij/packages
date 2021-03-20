@@ -7,6 +7,9 @@ import 'package:animations/animations.dart';
 
 /// The demo page for [SharedAxisPageTransitionsBuilder].
 class SharedAxisTransitionDemo extends StatefulWidget {
+  /// Creates the demo page for [SharedAxisPageTransitionsBuilder].
+  const SharedAxisTransitionDemo({Key? key}) : super(key: key);
+
   @override
   _SharedAxisTransitionDemoState createState() {
     return _SharedAxisTransitionDemoState();
@@ -14,11 +17,11 @@ class SharedAxisTransitionDemo extends StatefulWidget {
 }
 
 class _SharedAxisTransitionDemoState extends State<SharedAxisTransitionDemo> {
-  SharedAxisTransitionType _transitionType =
+  SharedAxisTransitionType? _transitionType =
       SharedAxisTransitionType.horizontal;
   bool _isLoggedIn = false;
 
-  void _updateTransitionType(SharedAxisTransitionType newType) {
+  void _updateTransitionType(SharedAxisTransitionType? newType) {
     setState(() {
       _transitionType = newType;
     });
@@ -51,7 +54,7 @@ class _SharedAxisTransitionDemoState extends State<SharedAxisTransitionDemo> {
                     child: child,
                     animation: animation,
                     secondaryAnimation: secondaryAnimation,
-                    transitionType: _transitionType,
+                    transitionType: _transitionType!,
                   );
                 },
                 child: _isLoggedIn ? _CoursePage() : _SignInPage(),
@@ -62,16 +65,12 @@ class _SharedAxisTransitionDemoState extends State<SharedAxisTransitionDemo> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: <Widget>[
-                  FlatButton(
+                  TextButton(
                     onPressed: _isLoggedIn ? _toggleLoginStatus : null,
-                    textColor: Theme.of(context).colorScheme.primary,
                     child: const Text('BACK'),
                   ),
-                  RaisedButton(
+                  ElevatedButton(
                     onPressed: _isLoggedIn ? null : _toggleLoginStatus,
-                    color: Theme.of(context).colorScheme.primary,
-                    textColor: Theme.of(context).colorScheme.onPrimary,
-                    disabledColor: Colors.black12,
                     child: const Text('NEXT'),
                   ),
                 ],
@@ -84,7 +83,7 @@ class _SharedAxisTransitionDemoState extends State<SharedAxisTransitionDemo> {
                 Radio<SharedAxisTransitionType>(
                   value: SharedAxisTransitionType.horizontal,
                   groupValue: _transitionType,
-                  onChanged: (SharedAxisTransitionType newValue) {
+                  onChanged: (SharedAxisTransitionType? newValue) {
                     _updateTransitionType(newValue);
                   },
                 ),
@@ -92,7 +91,7 @@ class _SharedAxisTransitionDemoState extends State<SharedAxisTransitionDemo> {
                 Radio<SharedAxisTransitionType>(
                   value: SharedAxisTransitionType.vertical,
                   groupValue: _transitionType,
-                  onChanged: (SharedAxisTransitionType newValue) {
+                  onChanged: (SharedAxisTransitionType? newValue) {
                     _updateTransitionType(newValue);
                   },
                 ),
@@ -100,7 +99,7 @@ class _SharedAxisTransitionDemoState extends State<SharedAxisTransitionDemo> {
                 Radio<SharedAxisTransitionType>(
                   value: SharedAxisTransitionType.scaled,
                   groupValue: _transitionType,
-                  onChanged: (SharedAxisTransitionType newValue) {
+                  onChanged: (SharedAxisTransitionType? newValue) {
                     _updateTransitionType(newValue);
                   },
                 ),
@@ -150,7 +149,7 @@ class _CoursePage extends StatelessWidget {
 
 class _CourseSwitch extends StatefulWidget {
   const _CourseSwitch({
-    this.course,
+    required this.course,
   });
 
   final String course;
@@ -229,17 +228,15 @@ class _SignInPage extends StatelessWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.only(left: 10.0),
-                  child: FlatButton(
+                  child: TextButton(
                     onPressed: () {},
-                    textColor: Theme.of(context).colorScheme.primary,
                     child: const Text('FORGOT EMAIL?'),
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.only(left: 10.0),
-                  child: FlatButton(
+                  child: TextButton(
                     onPressed: () {},
-                    textColor: Theme.of(context).colorScheme.primary,
                     child: const Text('CREATE ACCOUNT'),
                   ),
                 ),

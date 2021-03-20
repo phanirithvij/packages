@@ -19,7 +19,6 @@ int _combineHash(int current, int hash) =>
     (current & _multipleHashPrime) ^ hash;
 
 int _hashValues(List<int> values) {
-  assert(values != null);
   assert(values.isNotEmpty);
 
   return values.fold(
@@ -29,10 +28,10 @@ int _hashValues(List<int> values) {
 }
 
 /// Enumeration of support resource record types.
-class ResourceRecordType {
+abstract class ResourceRecordType {
   // This class is intended to be used as a namespace, and should not be
   // extended directly.
-  factory ResourceRecordType._() => null;
+  ResourceRecordType._();
 
   /// An IPv4 Address record, also known as an "A" record. It has a value of 1.
   static const int addressIPv4 = 1;
@@ -86,6 +85,7 @@ class ResourceRecordType {
 }
 
 /// Represents a DNS query.
+@immutable
 class ResourceRecordQuery {
   /// Creates a new ResourceRecordQuery.
   ///
@@ -94,8 +94,7 @@ class ResourceRecordQuery {
     this.resourceRecordType,
     this.fullyQualifiedName,
     this.questionType,
-  )   : assert(fullyQualifiedName != null),
-        assert(ResourceRecordType.debugAssertValid(resourceRecordType));
+  ) : assert(ResourceRecordType.debugAssertValid(resourceRecordType));
 
   /// An A (IPv4) query.
   ResourceRecordQuery.addressIPv4(
@@ -189,10 +188,10 @@ class ResourceRecordQuery {
 }
 
 /// Base implementation of DNS resource records (RRs).
+@immutable
 abstract class ResourceRecord {
   /// Creates a new ResourceRecord.
-  const ResourceRecord(this.resourceRecordType, this.name, this.validUntil)
-      : assert(name != null);
+  const ResourceRecord(this.resourceRecordType, this.name, this.validUntil);
 
   /// The FQDN for this record.
   final String name;
@@ -207,14 +206,13 @@ abstract class ResourceRecord {
 
   @override
   String toString() =>
-      '$runtimeType{$name, validUntil: ${DateTime.fromMillisecondsSinceEpoch(validUntil ?? 0)}, $_additionalInfo}';
+      '$runtimeType{$name, validUntil: ${DateTime.fromMillisecondsSinceEpoch(validUntil)}, $_additionalInfo}';
 
   @override
   bool operator ==(Object other) {
-    return other.runtimeType == runtimeType && _equals(other);
+    return other is ResourceRecord && _equals(other);
   }
 
-  @protected
   bool _equals(ResourceRecord other) {
     return other.name == name &&
         other.validUntil == validUntil &&
@@ -233,7 +231,6 @@ abstract class ResourceRecord {
 
   // Subclasses of this class should use _hashValues to create a hash code
   // that will then get hashed in with the common values on this class.
-  @protected
   int get _hashCode;
 
   /// Low level method for encoding this record into an mDNS packet.
@@ -247,12 +244,11 @@ abstract class ResourceRecord {
 /// A Service Pointer for reverse mapping an IP address (DNS "PTR").
 class PtrResourceRecord extends ResourceRecord {
   /// Creates a new PtrResourceRecord.
-  PtrResourceRecord(
+  const PtrResourceRecord(
     String name,
     int validUntil, {
-    @required this.domainName,
-  })  : assert(domainName != null),
-        super(ResourceRecordType.serverPointer, name, validUntil);
+    required this.domainName,
+  }) : super(ResourceRecordType.serverPointer, name, validUntil);
 
   /// The FQDN for this record.
   final String domainName;
@@ -282,7 +278,7 @@ class IPAddressResourceRecord extends ResourceRecord {
   IPAddressResourceRecord(
     String name,
     int validUntil, {
-    @required this.address,
+    required this.address,
   }) : super(
             address.type == InternetAddressType.IPv4
                 ? ResourceRecordType.addressIPv4
@@ -313,18 +309,14 @@ class IPAddressResourceRecord extends ResourceRecord {
 /// A Service record, capturing a host target and port (DNS "SRV").
 class SrvResourceRecord extends ResourceRecord {
   /// Creates a new service record.
-  SrvResourceRecord(
+  const SrvResourceRecord(
     String name,
     int validUntil, {
-    @required this.target,
-    @required this.port,
-    @required this.priority,
-    @required this.weight,
-  })  : assert(target != null),
-        assert(port != null),
-        assert(priority != null),
-        assert(weight != null),
-        super(ResourceRecordType.service, name, validUntil);
+    required this.target,
+    required this.port,
+    required this.priority,
+    required this.weight,
+  }) : super(ResourceRecordType.service, name, validUntil);
 
   /// The hostname for this record.
   final String target;
@@ -375,12 +367,11 @@ class SrvResourceRecord extends ResourceRecord {
 /// A Text record, contianing additional textual data (DNS "TXT").
 class TxtResourceRecord extends ResourceRecord {
   /// Creates a new text record.
-  TxtResourceRecord(
+  const TxtResourceRecord(
     String name,
     int validUntil, {
-    @required this.text,
-  })  : assert(text != null),
-        super(ResourceRecordType.text, name, validUntil);
+    required this.text,
+  }) : super(ResourceRecordType.text, name, validUntil);
 
   /// The raw text from this record.
   final String text;

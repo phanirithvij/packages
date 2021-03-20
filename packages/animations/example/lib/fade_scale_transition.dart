@@ -7,6 +7,9 @@ import 'package:animations/animations.dart';
 
 /// The demo page for [FadeScaleTransition].
 class FadeScaleTransitionDemo extends StatefulWidget {
+  /// Creates the demo page for [FadeScaleTransition].
+  const FadeScaleTransitionDemo({Key? key}) : super(key: key);
+
   @override
   _FadeScaleTransitionDemoState createState() =>
       _FadeScaleTransitionDemoState();
@@ -14,7 +17,7 @@ class FadeScaleTransitionDemo extends StatefulWidget {
 
 class _FadeScaleTransitionDemoState extends State<FadeScaleTransitionDemo>
     with SingleTickerProviderStateMixin {
-  AnimationController _controller;
+  late AnimationController _controller;
 
   @override
   void initState() {
@@ -48,8 +51,6 @@ class _FadeScaleTransitionDemoState extends State<FadeScaleTransitionDemo>
       case AnimationStatus.dismissed:
         return false;
     }
-    assert(false);
-    return null;
   }
 
   @override
@@ -58,7 +59,7 @@ class _FadeScaleTransitionDemoState extends State<FadeScaleTransitionDemo>
       appBar: AppBar(title: const Text('Fade')),
       floatingActionButton: AnimatedBuilder(
         animation: _controller,
-        builder: (BuildContext context, Widget child) {
+        builder: (BuildContext context, Widget? child) {
           return FadeScaleTransition(
             animation: _controller,
             child: child,
@@ -81,7 +82,7 @@ class _FadeScaleTransitionDemoState extends State<FadeScaleTransitionDemo>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                RaisedButton(
+                ElevatedButton(
                   onPressed: () {
                     showModal<void>(
                       context: context,
@@ -90,12 +91,10 @@ class _FadeScaleTransitionDemoState extends State<FadeScaleTransitionDemo>
                       },
                     );
                   },
-                  color: Theme.of(context).colorScheme.primary,
-                  textColor: Theme.of(context).colorScheme.onPrimary,
                   child: const Text('SHOW MODAL'),
                 ),
                 const SizedBox(width: 10),
-                RaisedButton(
+                ElevatedButton(
                   onPressed: () {
                     if (_isAnimationRunningForwardsOrComplete) {
                       _controller.reverse();
@@ -103,8 +102,6 @@ class _FadeScaleTransitionDemoState extends State<FadeScaleTransitionDemo>
                       _controller.forward();
                     }
                   },
-                  color: Theme.of(context).colorScheme.primary,
-                  textColor: Theme.of(context).colorScheme.onPrimary,
                   child: _isAnimationRunningForwardsOrComplete
                       ? const Text('HIDE FAB')
                       : const Text('SHOW FAB'),
@@ -124,13 +121,13 @@ class _ExampleAlertDialog extends StatelessWidget {
     return AlertDialog(
       content: const Text('Alert Dialog'),
       actions: <Widget>[
-        FlatButton(
+        TextButton(
           onPressed: () {
             Navigator.of(context).pop();
           },
           child: const Text('CANCEL'),
         ),
-        FlatButton(
+        TextButton(
           onPressed: () {
             Navigator.of(context).pop();
           },

@@ -7,6 +7,9 @@ import 'package:animations/animations.dart';
 
 /// The demo page for [FadeThroughTransition].
 class FadeThroughTransitionDemo extends StatefulWidget {
+  /// Creates the demo page for [FadeThroughTransition].
+  const FadeThroughTransitionDemo({Key? key}) : super(key: key);
+
   @override
   _FadeThroughTransitionDemoState createState() =>
       _FadeThroughTransitionDemoState();
@@ -49,15 +52,15 @@ class _FadeThroughTransitionDemoState extends State<FadeThroughTransitionDemo> {
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.photo_library),
-            title: Text('Albums'),
+            label: 'Albums',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.photo),
-            title: Text('Photos'),
+            label: 'Photos',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.search),
-            title: Text('Search'),
+            label: 'Search',
           ),
         ],
       ),

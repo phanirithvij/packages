@@ -7,13 +7,13 @@ library xdg_directories;
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 import 'package:process/process.dart';
 
 /// An override function used by the tests to override the environment variable
 /// lookups using [xdgEnvironmentOverride].
-typedef EnvironmentAccessor = String Function(String envVar);
+typedef EnvironmentAccessor = String? Function(String envVar);
 
 /// A testing setter that replaces the real environment lookups with an override.
 ///
@@ -21,7 +21,7 @@ typedef EnvironmentAccessor = String Function(String envVar);
 ///
 /// Only available to tests.
 @visibleForTesting
-set xdgEnvironmentOverride(EnvironmentAccessor override) {
+set xdgEnvironmentOverride(EnvironmentAccessor? override) {
   _xdgEnvironmentOverride = override;
   _getenv = _xdgEnvironmentOverride ?? _productionGetEnv;
 }
@@ -30,11 +30,11 @@ set xdgEnvironmentOverride(EnvironmentAccessor override) {
 /// replaces the real environment lookups with an override.
 ///
 /// Only available to tests.
-EnvironmentAccessor get xdgEnvironmentOverride => _xdgEnvironmentOverride;
-EnvironmentAccessor _xdgEnvironmentOverride;
-EnvironmentAccessor _productionGetEnv =
-    (String value) => Platform.environment[value];
+@visibleForTesting
+EnvironmentAccessor? get xdgEnvironmentOverride => _xdgEnvironmentOverride;
+EnvironmentAccessor? _xdgEnvironmentOverride;
 EnvironmentAccessor _getenv = _productionGetEnv;
+String? _productionGetEnv(String value) => Platform.environment[value];
 
 /// A testing function that replaces the process manager used to run xdg-user-path
 /// with the one supplied.
@@ -49,9 +49,9 @@ ProcessManager _processManager = const LocalProcessManager();
 
 List<Directory> _directoryListFromEnvironment(
     String envVar, List<Directory> fallback) {
-  assert(envVar != null);
-  assert(fallback != null);
-  final String value = _getenv(envVar);
+  ArgumentError.checkNotNull(envVar);
+  ArgumentError.checkNotNull(fallback);
+  final String? value = _getenv(envVar);
   if (value == null || value.isEmpty) {
     return fallback;
   }
@@ -62,13 +62,20 @@ List<Directory> _directoryListFromEnvironment(
   }).toList();
 }
 
-Directory _directoryFromEnvironment(String envVar, String fallback) {
-  assert(envVar != null);
-  final String value = _getenv(envVar);
+Directory? _directoryFromEnvironment(String envVar) {
+  ArgumentError.checkNotNull(envVar);
+  final String? value = _getenv(envVar);
   if (value == null || value.isEmpty) {
-    if (fallback == null) {
-      return null;
-    }
+    return null;
+  }
+  return Directory(value);
+}
+
+Directory _directoryFromEnvironmentWithFallback(
+    String envVar, String fallback) {
+  ArgumentError.checkNotNull(envVar);
+  final String? value = _getenv(envVar);
+  if (value == null || value.isEmpty) {
     return _getDirectory(fallback);
   }
   return Directory(value);
@@ -76,9 +83,9 @@ Directory _directoryFromEnvironment(String envVar, String fallback) {
 
 // Creates a Directory from a fallback path.
 Directory _getDirectory(String subdir) {
-  assert(subdir != null);
+  ArgumentError.checkNotNull(subdir);
   assert(subdir.isNotEmpty);
-  final String homeDir = _getenv('HOME');
+  final String? homeDir = _getenv('HOME');
   if (homeDir == null || homeDir.isEmpty) {
     throw StateError(
         'The "HOME" environment variable is not set. This package (and POSIX) '
@@ -93,7 +100,7 @@ Directory _getDirectory(String subdir) {
 ///
 /// Throws [StateError] if the HOME environment variable is not set.
 Directory get cacheHome =>
-    _directoryFromEnvironment('XDG_CACHE_HOME', '.cache');
+    _directoryFromEnvironmentWithFallback('XDG_CACHE_HOME', '.cache');
 
 /// The list of preference-ordered base directories relative to
 /// which configuration files should be searched. (Corresponds to
@@ -112,7 +119,7 @@ List<Directory> get configDirs {
 ///
 /// Throws [StateError] if the HOME environment variable is not set.
 Directory get configHome =>
-    _directoryFromEnvironment('XDG_CONFIG_HOME', '.config');
+    _directoryFromEnvironmentWithFallback('XDG_CONFIG_HOME', '.config');
 
 /// The list of preference-ordered base directories relative to
 /// which data files should be searched. (Corresponds to `$XDG_DATA_DIRS`).
@@ -130,25 +137,25 @@ List<Directory> get dataDirs {
 ///
 /// Throws [StateError] if the HOME environment variable is not set.
 Directory get dataHome =>
-    _directoryFromEnvironment('XDG_DATA_HOME', '.local/share');
+    _directoryFromEnvironmentWithFallback('XDG_DATA_HOME', '.local/share');
 
 /// The base directory relative to which user-specific runtime
 /// files and other file objects should be placed. (Corresponds to
 /// `$XDG_RUNTIME_DIR`).
 ///
 /// Throws [StateError] if the HOME environment variable is not set.
-Directory get runtimeDir => _directoryFromEnvironment('XDG_RUNTIME_DIR', null);
+Directory? get runtimeDir => _directoryFromEnvironment('XDG_RUNTIME_DIR');
 
 /// Gets the xdg user directory named by `dirName`.
 ///
 /// Use [getUserDirectoryNames] to find out the list of available names.
-Directory getUserDirectory(String dirName) {
+Directory? getUserDirectory(String dirName) {
   final ProcessResult result = _processManager.runSync(
     <String>['xdg-user-dir', dirName],
     includeParentEnvironment: true,
-    stdoutEncoding: Encoding.getByName('utf8'),
+    stdoutEncoding: utf8,
   );
-  final String path = utf8.decode(result.stdout).split('\n')[0];
+  final String path = (result.stdout as String).split('\n')[0];
   return Directory(path);
 }
 
@@ -170,12 +177,12 @@ Set<String> getUserDirectoryNames() {
   final Set<String> result = <String>{};
   final RegExp dirRegExp =
       RegExp(r'^\s*XDG_(?<dirname>[^=]*)_DIR\s*=\s*(?<dir>.*)\s*$');
-  for (String line in contents) {
-    final RegExpMatch match = dirRegExp.firstMatch(line);
+  for (final String line in contents) {
+    final RegExpMatch? match = dirRegExp.firstMatch(line);
     if (match == null) {
       continue;
     }
-    result.add(match.namedGroup('dirname'));
+    result.add(match.namedGroup('dirname')!);
   }
   return result;
 }

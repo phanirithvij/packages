@@ -23,7 +23,8 @@ doesn't need to worry about conflicting versions of Pigeon.
 
 1) Add Pigeon as a dev_dependency.
 1) Make a ".dart" file outside of your "lib" directory for defining the communication interface.
-1) Run pigeon on your ".dart" file to generate the required Dart and Objective-C code.
+1) Run pigeon on your ".dart" file to generate the required Dart and Objective-C code:
+   `flutter pub get` then `flutter pub run pigeon` with suitable arguments.
 1) Add the generated Dart code to `lib` for compilation.
 1) Add the generated Objective-C code to your Xcode project for compilation
    (e.g. `ios/Runner.xcworkspace` or `.podspec`).
@@ -36,6 +37,7 @@ doesn't need to worry about conflicting versions of Pigeon.
 1) Add Pigeon as a dev_dependency.
 1) Make a ".dart" file outside of your "lib" directory for defining the communication interface.
 1) Run pigeon on your ".dart" file to generate the required Dart and Java code.
+   `flutter pub get` then `flutter pub run pigeon` with suitable arguments.
 1) Add the generated Dart code to `./lib` for compilation.
 1) Add the generated Java code to your `./android/app/src/main/java` directory for compilation.
 1) Implement the generated Java interface for handling the calls on Android, set it up
@@ -65,6 +67,54 @@ channels supports
 [[documentation](https://flutter.dev/docs/development/platform-integration/platform-channels#codec)].  Nested data-types are supported, too.
 
 Note: Generics for List and Map aren't supported yet.
+
+## Asynchronous Handlers
+
+By default Pigeon will generate synchronous handlers for messages.  If you want
+to be able to respond to a message asynchronously you can use the `@async`
+annotation as of version 0.1.20.
+
+Example:
+
+```dart
+class Value {
+  int? number;
+}
+
+@HostApi()
+abstract class Api2Host {
+  @async
+  Value calculate(Value value);
+}
+```
+
+Generates:
+
+```objc
+// Objc
+@protocol Api2Host
+-(void)calculate:(nullable Value *)input 
+      completion:(void(^)(Value *_Nullable, FlutterError *_Nullable))completion;
+@end
+```
+
+```java
+// Java
+public interface Result<T> {
+   void success(T result);
+}
+
+/** Generated interface from Pigeon that represents a handler of messages from Flutter.*/
+public interface Api2Host {
+   void calculate(Value arg, Result<Value> result);
+}
+```
+
+## Null Safety (NNBD)
+
+In order to generate null-safe code run the command line with the extra argument
+`--dart_null_safety`. For example:
+`flutter pub run pigeon --input ./pigeons/messages.dart --dart_null_safety`.
 
 ## Feedback
 

@@ -275,6 +275,25 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('using custom layout', (WidgetTester tester) async {
+    Widget newLayoutBuilder(List<Widget> activeEntries) {
+      return Column(
+        children: activeEntries,
+      );
+    }
+
+    await tester.pumpWidget(
+      PageTransitionSwitcher(
+        duration: const Duration(milliseconds: 100),
+        child: Container(color: const Color(0x00000000)),
+        transitionBuilder: _transitionBuilder,
+        layoutBuilder: newLayoutBuilder,
+      ),
+    );
+
+    expect(find.byType(Column), findsOneWidget);
+  });
+
   testWidgets("doesn't transition in a new child of the same type.",
       (WidgetTester tester) async {
     await tester.pumpWidget(
@@ -566,7 +585,7 @@ void main() {
 }
 
 class StatefulTestWidget extends StatefulWidget {
-  const StatefulTestWidget({Key key}) : super(key: key);
+  const StatefulTestWidget({Key? key}) : super(key: key);
 
   @override
   StatefulTestWidgetState createState() => StatefulTestWidgetState();
@@ -600,7 +619,7 @@ Widget _transitionBuilder(
 Map<Key, double> _getSecondaryAnimation(List<Key> keys, WidgetTester tester) {
   expect(find.byType(FadeTransition), findsNWidgets(keys.length));
   final Map<Key, double> result = <Key, double>{};
-  for (Key key in keys) {
+  for (final Key key in keys) {
     final FadeTransition transition = tester.firstWidget(
       find.ancestor(
         of: find.byKey(key),
@@ -615,7 +634,7 @@ Map<Key, double> _getSecondaryAnimation(List<Key> keys, WidgetTester tester) {
 Map<Key, double> _getPrimaryAnimation(List<Key> keys, WidgetTester tester) {
   expect(find.byType(ScaleTransition), findsNWidgets(keys.length));
   final Map<Key, double> result = <Key, double>{};
-  for (Key key in keys) {
+  for (final Key key in keys) {
     final ScaleTransition transition = tester.firstWidget(
       find.ancestor(
         of: find.byKey(key),

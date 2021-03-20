@@ -40,6 +40,9 @@ const double _fabDimension = 56.0;
 
 /// The demo page for [OpenContainerTransform].
 class OpenContainerTransformDemo extends StatefulWidget {
+  /// Creates the demo page for [OpenContainerTransform].
+  const OpenContainerTransformDemo({Key? key}) : super(key: key);
+
   @override
   _OpenContainerTransformDemoState createState() {
     return _OpenContainerTransformDemoState();
@@ -49,11 +52,10 @@ class OpenContainerTransformDemo extends StatefulWidget {
 class _OpenContainerTransformDemoState
     extends State<OpenContainerTransformDemo> {
   ContainerTransitionType _transitionType = ContainerTransitionType.fade;
-  final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
 
-  void _showMarkedAsDoneSnackbar(bool isMarkedAsDone) {
+  void _showMarkedAsDoneSnackbar(bool? isMarkedAsDone) {
     if (isMarkedAsDone ?? false)
-      scaffoldKey.currentState.showSnackBar(const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Marked as done!'),
       ));
   }
@@ -111,7 +113,6 @@ class _OpenContainerTransformDemoState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: scaffoldKey,
       appBar: AppBar(
         title: const Text('Container transform'),
         actions: <Widget>[
@@ -273,14 +274,14 @@ class _OpenContainerTransformDemoState
 
 class _OpenContainerWrapper extends StatelessWidget {
   const _OpenContainerWrapper({
-    this.closedBuilder,
-    this.transitionType,
-    this.onClosed,
+    required this.closedBuilder,
+    required this.transitionType,
+    required this.onClosed,
   });
 
-  final OpenContainerBuilder closedBuilder;
+  final CloseContainerBuilder closedBuilder;
   final ContainerTransitionType transitionType;
-  final ClosedCallback<bool> onClosed;
+  final ClosedCallback<bool?> onClosed;
 
   @override
   Widget build(BuildContext context) {
@@ -297,7 +298,7 @@ class _OpenContainerWrapper extends StatelessWidget {
 }
 
 class _ExampleCard extends StatelessWidget {
-  const _ExampleCard({this.openContainer});
+  const _ExampleCard({required this.openContainer});
 
   final VoidCallback openContainer;
 
@@ -335,7 +336,7 @@ class _ExampleCard extends StatelessWidget {
               'adipiscing elit, sed do eiusmod tempor.',
               style: Theme.of(context)
                   .textTheme
-                  .bodyText2
+                  .bodyText2!
                   .copyWith(color: Colors.black54),
             ),
           ),
@@ -347,8 +348,8 @@ class _ExampleCard extends StatelessWidget {
 
 class _SmallerCard extends StatelessWidget {
   const _SmallerCard({
-    this.openContainer,
-    this.subtitle,
+    required this.openContainer,
+    required this.subtitle,
   });
 
   final VoidCallback openContainer;
@@ -399,7 +400,7 @@ class _SmallerCard extends StatelessWidget {
 }
 
 class _ExampleSingleTile extends StatelessWidget {
-  const _ExampleSingleTile({this.openContainer});
+  const _ExampleSingleTile({required this.openContainer});
 
   final VoidCallback openContainer;
 
@@ -456,10 +457,10 @@ class _InkWellOverlay extends StatelessWidget {
     this.child,
   });
 
-  final VoidCallback openContainer;
-  final double width;
-  final double height;
-  final Widget child;
+  final VoidCallback? openContainer;
+  final double? width;
+  final double? height;
+  final Widget? child;
 
   @override
   Widget build(BuildContext context) {
@@ -512,7 +513,7 @@ class _DetailsPage extends StatelessWidget {
               children: <Widget>[
                 Text(
                   'Title',
-                  style: Theme.of(context).textTheme.headline5.copyWith(
+                  style: Theme.of(context).textTheme.headline5!.copyWith(
                         color: Colors.black54,
                         fontSize: 30.0,
                       ),
@@ -520,7 +521,7 @@ class _DetailsPage extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(
                   _loremIpsumParagraph,
-                  style: Theme.of(context).textTheme.bodyText2.copyWith(
+                  style: Theme.of(context).textTheme.bodyText2!.copyWith(
                         color: Colors.black54,
                         height: 1.5,
                         fontSize: 16.0,

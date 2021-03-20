@@ -15,7 +15,7 @@ function check_publish() {
   for package_name in "$@"; do
     local dir="$REPO_DIR/packages/$package_name"
     echo "Checking that $package_name can be published."
-    if (cd "$dir" && pub publish --dry-run > /dev/null); then
+    if (cd "$dir" && flutter pub publish --dry-run > /dev/null); then
       echo "Package $package_name is able to be published."
     else
       error "Unable to publish $package_name"
@@ -23,12 +23,12 @@ function check_publish() {
     fi
   done
   if [[ "${#failures[@]}" != 0 ]]; then
-    error "FAIL: The following ${#failures[@]} package(s) failed the publishing check:"
+    error "WARNING: The following ${#failures[@]} package(s) failed the publishing check:"
     for failure in "${failures[@]}"; do
       error "$failure"
     done
   fi
-  return "${#failures[@]}"
+  return 0
 }
 
 # Sets CHANGED_PACKAGE_LIST

@@ -7,8 +7,8 @@ import 'dart:io';
 import 'dart:mirrors';
 import 'ast.dart';
 
-/// The current version of pigeon.
-const String pigeonVersion = '0.1.2';
+/// The current version of pigeon. This must match the version in pubspec.yaml.
+const String pigeonVersion = '0.2.0';
 
 /// Read all the content from [stdin] to a String.
 String readStdin() {
@@ -36,16 +36,16 @@ class Indent {
   final String tab = '  ';
 
   /// Increase the indentation level.
-  void inc() {
-    _count += 1;
+  void inc([int level = 1]) {
+    _count += level;
   }
 
   /// Decrement the indentation level.
-  void dec() {
-    _count -= 1;
+  void dec([int level = 1]) {
+    _count -= level;
   }
 
-  /// Returns the String represneting the current indentation.
+  /// Returns the String representing the current indentation.
   String str() {
     String result = '';
     for (int i = 0; i < _count; i++) {
@@ -55,44 +55,82 @@ class Indent {
   }
 
   /// Replaces the newlines and tabs of input and adds it to the stream.
-  void format(String input) {
-    for (String line in input.split('\n')) {
-      writeln(line.replaceAll('\t', tab));
+  void format(String input,
+      {bool leadingSpace = true, bool trailingNewline = true}) {
+    final List<String> lines = input.split('\n');
+    for (int i = 0; i < lines.length; ++i) {
+      final String line = lines[i];
+      if (i == 0 && !leadingSpace) {
+        addln(line.replaceAll('\t', tab));
+      } else if (i == lines.length - 1 && !trailingNewline) {
+        write(line.replaceAll('\t', tab));
+      } else {
+        writeln(line.replaceAll('\t', tab));
+      }
     }
   }
 
   /// Scoped increase of the ident level.  For the execution of [func] the
   /// indentation will be incremented.
-  void scoped(String begin, String end, Function func) {
+  void scoped(
+    String? begin,
+    String? end,
+    Function func, {
+    bool addTrailingNewline = true,
+  }) {
     if (begin != null) {
       _sink.write(begin + newline);
     }
-    inc();
-    func();
-    dec();
+    nest(1, func);
     if (end != null) {
-      _sink.write(str() + end + newline);
+      _sink.write(str() + end);
+      if (addTrailingNewline) {
+        _sink.write(newline);
+      }
     }
   }
 
-  /// Add [str] with indentation and a newline.
-  void writeln(String str) {
-    _sink.write(this.str() + str + newline);
+  /// Like `scoped` but writes the current indentation level.
+  void writeScoped(
+    String? begin,
+    String end,
+    Function func, {
+    bool addTrailingNewline = true,
+  }) {
+    scoped(str() + (begin ?? ''), end, func,
+        addTrailingNewline: addTrailingNewline);
   }
 
-  /// Add [str] with indentation.
-  void write(String str) {
-    _sink.write(this.str() + str);
+  /// Scoped increase of the ident level.  For the execution of [func] the
+  /// indentation will be incremented by the given amount.
+  void nest(int count, Function func) {
+    inc(count);
+    func();
+    dec(count);
   }
 
-  /// Add [str] with a newline.
-  void addln(String str) {
-    _sink.write(str + newline);
+  /// Add [text] with indentation and a newline.
+  void writeln(String text) {
+    if (text.isEmpty) {
+      _sink.write(newline);
+    } else {
+      _sink.write(str() + text + newline);
+    }
   }
 
-  /// Just adds [str].
-  void add(String str) {
-    _sink.write(str);
+  /// Add [text] with indentation.
+  void write(String text) {
+    _sink.write(str() + text);
+  }
+
+  /// Add [text] with a newline.
+  void addln(String text) {
+    _sink.write(text + newline);
+  }
+
+  /// Just adds [text].
+  void add(String text) {
+    _sink.write(text);
   }
 }
 
@@ -104,7 +142,10 @@ String makeChannelName(Api api, Method func) {
 /// Represents the mapping of a Dart datatype to a Host datatype.
 class HostDatatype {
   /// Parametric constructor for HostDatatype.
-  HostDatatype({this.datatype, this.isBuiltin});
+  HostDatatype({
+    required this.datatype,
+    required this.isBuiltin,
+  });
 
   /// The [String] that can be printed into host code to represent the type.
   final String datatype;
@@ -118,9 +159,9 @@ class HostDatatype {
 /// `builtinResolver` will return the host datatype for the Dart datatype for
 /// builtin types.  `customResolver` can modify the datatype of custom types.
 HostDatatype getHostDatatype(
-    Field field, List<Class> classes, String Function(String) builtinResolver,
-    {String Function(String) customResolver}) {
-  final String datatype = builtinResolver(field.dataType);
+    Field field, List<Class> classes, String? Function(String) builtinResolver,
+    {String Function(String)? customResolver}) {
+  final String? datatype = builtinResolver(field.dataType);
   if (datatype == null) {
     if (classes.map((Class x) => x.name).contains(field.dataType)) {
       final String customName = customResolver != null

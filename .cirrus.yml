@@ -1,18 +1,24 @@
+gcp_credentials: ENCRYPTED[1816835da1e936dabb469b51501856ec8468676e35e967bd0fd720a815498e5ee6c8a6a79219ce273f67bcb8f1aa948a]
+
 task:
-  use_compute_credits: $CIRRUS_USER_COLLABORATOR == 'true' && $CIRRUS_PR == ''
-  container:
+  gke_container:
     dockerfile: .ci/Dockerfile
+    builder_image_name: docker-builder # gce vm image
+    builder_image_project: flutter-cirrus
+    cluster_name: build-32-cluster
+    zone: us-central1-a
+    namespace: default
     cpu: 4
     memory: 8G
   upgrade_script:
     - flutter channel master
     - flutter upgrade
+    - flutter doctor
     - git fetch origin master
   activate_script: pub global activate flutter_plugin_tools
   matrix:
     - name: analyze
-      # TODO(goderbauer): remove custom-analysis once gauge has proper API docs.
-      script: ./script/incremental_build.sh analyze --custom-analysis gauge
+      script: ./script/incremental_build.sh analyze --custom-analysis=web_benchmarks/testing/test_app
     - name: publishable
       script: ./script/check_publish.sh
       depends_on:
@@ -32,24 +38,53 @@ task:
         - ./script/incremental_build.sh java-test  # must come after apk build
       depends_on:
         - analyze
+    - name: web_benchmarks_test
+      script:
+        - ./script/install_chromium.sh
+        - export CHROME_EXECUTABLE=$(pwd)/.chromium/chrome-linux/chrome
+        - flutter config --enable-web
+        - cd packages/web_benchmarks/testing/test_app
+        - flutter packages get
+        - cd ../..
+        - flutter packages get
+        - dart testing/web_benchmarks_test.dart
 
 task:
-  use_compute_credits: $CIRRUS_USER_COLLABORATOR == 'true'
   name: build-ipas
+  use_compute_credits: $CIRRUS_USER_COLLABORATOR == 'true'
   osx_instance:
-    image: high-sierra-xcode-9.4.1
+    image: big-sur-xcode-12.4
   env:
     PATH: $PATH:/usr/local/bin
     matrix:
       BUILD_SHARDING: "--shardIndex 0 --shardCount 2"
       BUILD_SHARDING: "--shardIndex 1 --shardCount 2"
   setup_script:
-    - pod repo update
-    - git clone https://github.com/flutter/flutter.git
-    - git fetch origin master
-    - export PATH=`pwd`/flutter/bin:`pwd`/flutter/bin/cache/dart-sdk/bin:$PATH
+    - flutter channel master
+    - flutter upgrade
     - flutter doctor
+    - git fetch origin master
     - pub global activate flutter_plugin_tools
   build_script:
-    - export PATH=`pwd`/flutter/bin:`pwd`/flutter/bin/cache/dart-sdk/bin:$PATH
     - ./script/incremental_build.sh build-examples --ipa
+
+task:
+  name: local_tests
+  use_compute_credits: $CIRRUS_USER_COLLABORATOR == 'true'
+  osx_instance:
+    image: big-sur-xcode-12.4
+  env:
+    PATH: $PATH:/usr/local/bin
+    matrix:
+      CHANNEL: "master"
+      CHANNEL: "stable"
+  setup_script:
+    - git fetch origin master
+    - pub global activate flutter_plugin_tools
+    - brew install clang-format
+  upgrade_script:
+    - flutter channel $CHANNEL
+    - flutter upgrade
+    - flutter doctor
+  build_script:
+    - ./script/local_tests.sh

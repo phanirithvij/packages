@@ -5,16 +5,16 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/fake.dart';
+import 'package:test/test.dart';
 import 'package:path/path.dart' as path;
-import 'package:mockito/mockito.dart' show Fake;
 import 'package:process/process.dart';
 
 import 'package:xdg_directories/xdg_directories.dart' as xdg;
 
 void main() {
   final Map<String, String> fakeEnv = <String, String>{};
-  Directory tmpDir;
+  late Directory tmpDir;
 
   String testPath(String subdir) => path.join(tmpDir.path, subdir);
 
@@ -29,11 +29,11 @@ void main() {
         '${testPath('usr/local/test_share')}:${testPath('usr/test_share')}';
     fakeEnv['XDG_DATA_HOME'] = testPath('.local/test_share');
     fakeEnv['XDG_RUNTIME_DIR'] = testPath('.local/test_runtime');
-    Directory(fakeEnv['XDG_CONFIG_HOME']).createSync(recursive: true);
-    Directory(fakeEnv['XDG_CACHE_HOME']).createSync(recursive: true);
-    Directory(fakeEnv['XDG_DATA_HOME']).createSync(recursive: true);
-    Directory(fakeEnv['XDG_RUNTIME_DIR']).createSync(recursive: true);
-    File(path.join(fakeEnv['XDG_CONFIG_HOME'], 'user-dirs.dirs'))
+    Directory(fakeEnv['XDG_CONFIG_HOME']!).createSync(recursive: true);
+    Directory(fakeEnv['XDG_CACHE_HOME']!).createSync(recursive: true);
+    Directory(fakeEnv['XDG_DATA_HOME']!).createSync(recursive: true);
+    Directory(fakeEnv['XDG_RUNTIME_DIR']!).createSync(recursive: true);
+    File(path.join(fakeEnv['XDG_CONFIG_HOME']!, 'user-dirs.dirs'))
         .writeAsStringSync(r'''
 XDG_DESKTOP_DIR="$HOME/Desktop"
 XDG_DOCUMENTS_DIR="$HOME/Documents"
@@ -46,10 +46,9 @@ XDG_VIDEOS_DIR="$HOME/Videos"
 ''');
     xdg.xdgEnvironmentOverride = (String key) => fakeEnv[key];
   });
+
   tearDown(() {
-    if (tmpDir != null) {
-      tmpDir.deleteSync(recursive: true);
-    }
+    tmpDir.deleteSync(recursive: true);
     // Stop overriding the environment accessor.
     xdg.xdgEnvironmentOverride = null;
   });
@@ -70,11 +69,13 @@ XDG_VIDEOS_DIR="$HOME/Videos"
     expectDirList(xdg.configDirs, <String>['/etc/xdg']);
     expectDirList(xdg.dataDirs, <String>['/usr/local/share', '/usr/share']);
   });
+
   test('Values pull from environment', () {
     expect(xdg.cacheHome.path, equals(testPath('.test_cache')));
     expect(xdg.configHome.path, equals(testPath('.test_config')));
     expect(xdg.dataHome.path, equals(testPath('.local/test_share')));
-    expect(xdg.runtimeDir.path, equals(testPath('.local/test_runtime')));
+    expect(xdg.runtimeDir, isNotNull);
+    expect(xdg.runtimeDir!.path, equals(testPath('.local/test_runtime')));
 
     expectDirList(xdg.configDirs, <String>[testPath('etc/test_xdg')]);
     expectDirList(xdg.dataDirs, <String>[
@@ -82,6 +83,7 @@ XDG_VIDEOS_DIR="$HOME/Videos"
       testPath('usr/test_share'),
     ]);
   });
+
   test('Can get userDirs', () {
     final Map<String, String> expected = <String, String>{
       'DESKTOP': testPath('Desktop'),
@@ -96,12 +98,13 @@ XDG_VIDEOS_DIR="$HOME/Videos"
     xdg.xdgProcessManager = FakeProcessManager(expected);
     final Set<String> userDirs = xdg.getUserDirectoryNames();
     expect(userDirs, equals(expected.keys.toSet()));
-    for (String key in userDirs) {
-      expect(xdg.getUserDirectory(key).path, equals(expected[key]),
+    for (final String key in userDirs) {
+      expect(xdg.getUserDirectory(key)!.path, equals(expected[key]),
           reason: 'Path $key value not correct');
     }
     xdg.xdgProcessManager = const LocalProcessManager();
   });
+
   test('Throws StateError when HOME not set', () {
     fakeEnv.clear();
     expect(() {
@@ -118,13 +121,13 @@ class FakeProcessManager extends Fake implements ProcessManager {
   @override
   ProcessResult runSync(
     List<dynamic> command, {
-    String workingDirectory,
-    Map<String, String> environment,
+    String? workingDirectory,
+    Map<String, String>? environment,
     bool includeParentEnvironment = true,
     bool runInShell = false,
     Encoding stdoutEncoding = systemEncoding,
     Encoding stderrEncoding = systemEncoding,
   }) {
-    return ProcessResult(0, 0, expected[command[1]].codeUnits, <int>[]);
+    return ProcessResult(0, 0, expected[command[1]]!, '');
   }
 }
